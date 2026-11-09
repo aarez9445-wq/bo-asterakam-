@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>بۆ تۆ 💖</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&display=swap');
+  :root{--c1:#ff4f94;--c2:#ff8fb8;--bg1:#4a1442;--bg2:#2a0b2e;--bg3:#14051a}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{height:100%;overflow:hidden;font-family:'Noto Naskh Arabic',Tahoma,sans-serif;color:#fff}
+  body{background:radial-gradient(circle at 50% 30%,var(--bg1) 0%,var(--bg2) 55%,var(--bg3) 100%);transition:background .6s}
+
+  .watermark{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0}
+  .watermark span{font-size:22vw;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.04);transform:rotate(-30deg);white-space:nowrap}
+  canvas{position:fixed;inset:0;z-index:1;pointer-events:none}
+  #fx{z-index:9}
+
+  .screen{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:opacity .9s ease,visibility .9s}
+  .screen.hide{opacity:0;visibility:hidden;pointer-events:none}
+
+  /* Lock */
+  .heart-wrap{position:relative;width:200px;height:200px;cursor:pointer;touch-action:none}
+  .heart-wrap svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 12px rgba(255,80,140,.4))}
+  .heart-outline{fill:none;stroke:#fff;stroke-width:3}
+  .heart-fill{fill:#e5173f;clip-path:inset(100% 0 0 0)}
+  .heart-inner{fill:#ff6fa5;transform-origin:center;transform:scale(0);opacity:0;transition:.5s;filter:drop-shadow(0 0 14px #ff6fa5)}
+  .heart-wrap.holding .heart-outline{stroke:var(--c2)}
+  .heart-wrap.done .heart-inner{transform:scale(1);opacity:1}
+  .heart-wrap.pulse svg{animation:pulse .9s infinite}
+  @keyframes pulse{50%{transform:scale(1.07)}}
+  .sparkle{position:absolute;width:10px;height:10px;background:#fff;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);opacity:0;pointer-events:none}
+  .heart-wrap.done .sparkle{animation:spark 1s ease-out forwards}
+  @keyframes spark{0%{opacity:1;transform:translate(0,0) scale(.4)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(1.6)}}
+  .hint{margin-top:34px;text-align:center;line-height:2;font-size:1.15rem}
+  .hint small{display:block;opacity:.7;font-size:.95rem}
+  .progress{margin-top:16px;font-size:.9rem;opacity:.8;height:20px}
+
+  /* Cards */
+  .card{width:100%;max-width:420px;background:rgba(20,8,26,.72);border:1px solid rgba(255,255,255,.1);border-radius:26px;backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(0,0,0,.5);overflow:hidden}
+  .timer{text-align:center;padding:12px 16px 0;font-size:.9rem;color:var(--c2);min-height:34px}
+  .slides{position:relative;height:min(58vh,450px);overflow:hidden}
+  .slide{position:absolute;inset:0;padding:18px 24px 10px;overflow-y:auto}
+  .slide.inR{animation:inR .5s ease both}
+  .slide.inL{animation:inL .5s ease both}
+  @keyframes inR{from{opacity:0;transform:translateX(-60px)}to{opacity:1;transform:none}}
+  @keyframes inL{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:none}}
+  .slide h2{font-size:1.5rem;margin-bottom:18px;color:var(--c2)}
+  .slide p{font-size:1.1rem;line-height:2.1;margin-bottom:16px;text-align:justify;color:#f5eaf2;min-height:1em}
+  .slide .sign{margin-top:22px;font-weight:700;font-size:1.2rem;color:var(--c2)}
+  .caret::after{content:'|';color:var(--c1);animation:blink .7s infinite}
+  @keyframes blink{50%{opacity:0}}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .nav button{width:44px;height:44px;border:none;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:1.4rem;cursor:pointer;transition:.2s}
+  .nav button:active{transform:scale(.9);background:var(--c1)}
+  .nav button:disabled{opacity:.25;cursor:default}
+  .dots{display:flex;gap:9px}
+  .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3);transition:.3s}
+  .dot.active{background:var(--c1);width:24px;border-radius:6px;box-shadow:0 0 8px var(--c1)}
+  .actions{display:none;gap:10px;justify-content:center;padding:0 16px 16px}
+  .actions.show{display:flex}
+  .actions button{flex:1;padding:10px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--c1),#a8238a);color:#fff;font-family:inherit;font-size:1rem;cursor:pointer}
+
+  /* Tools */
+  .tools{position:fixed;top:14px;left:14px;z-index:10;display:flex;gap:8px}
+  .tools button{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:1.05rem;cursor:pointer;backdrop-filter:blur(4px)}
+  .themes{position:fixed;top:62px;left:14px;z-index:10;display:none;flex-direction:column;gap:8px}
+  .themes.open{display:flex}
+  .themes i{width:30px;height:30px;border-radius:50%;border:2px solid #fff;cursor:pointer;margin-left:5px}
+
+  .floaty{position:fixed;z-index:8;pointer-events:none;font-size:22px;animation:fly 1.6s ease-out forwards}
+  @keyframes fly{to{transform:translateY(-160px) scale(1.6);opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="watermark"><span>CODEX</span></div>
+<canvas id="particles"></canvas>
+<canvas id="fx"></canvas>
+
+<div class="tools">
+  <button id="musicBtn" title="دەنگ">🔊</button>
+  <button id="themeBtn" title="ڕەنگ">🎨</button>
+  <button id="fsBtn" title="شاشەی تەواو">⛶</button>
+</div>
+<div class="themes" id="themes">
+  <i data-t="pink"   style="background:#ff4f94"></i>
+  <i data-t="purple" style="background:#9b5cff"></i>
+  <i data-t="blue"   style="background:#38a8ff"></i>
+  <i data-t="gold"   style="background:#ffbf3c"></i>
+</div>
+
+<audio id="bgm" src="music.mp3" loop preload="auto" playsinline></audio>
+
+<!-- Lock -->
+<div class="screen" id="lock">
+  <div class="heart-wrap" id="heart">
+    <svg viewBox="0 0 100 90">
+      <defs><path id="hp" d="M50 85 C10 55 2 30 18 15 C32 3 46 12 50 24 C54 12 68 3 82 15 C98 30 90 55 50 85Z"/></defs>
+      <use href="#hp" class="heart-fill" id="hfill"/>
+      <use href="#hp" class="heart-outline"/>
+      <path class="heart-inner" d="M50 62 C34 49 31 39 38 33 C44 28 49 32 50 37 C51 32 56 28 62 33 C69 39 66 49 50 62Z"/>
+    </svg>
+    <i class="sparkle" style="top:10%;left:5%;--x:-40px;--y:-40px"></i>
+    <i class="sparkle" style="top:5%;right:10%;--x:40px;--y:-45px"></i>
+    <i class="sparkle" style="bottom:20%;left:0;--x:-50px;--y:10px"></i>
+    <i class="sparkle" style="bottom:25%;right:0;--x:50px;--y:15px"></i>
+    <i class="sparkle" style="bottom:0;left:45%;--x:0;--y:55px"></i>
+  </div>
+  <div class="hint">پەنجە بنێ بە دڵەکەدا و بەردەوام بە<small>(لە هەر شوێنێکی دڵەکە بێت کێشە نییە)</small></div>
+  <div class="progress" id="pct"></div>
+</div>
+
+<!-- Cards -->
+<div class="screen hide" id="cards">
+  <div class="card">
+    <div class="timer" id="timer"></div>
+    <div class="slides" id="slides"></div>
+    <div class="actions" id="actions">
+      <button id="replay">🔁 دووبارە</button>
+      <button id="share">📤 بڵاوکردنەوە</button>
+    </div>
+    <div class="nav">
+      <button id="prev" disabled>&rsaquo;</button>
+      <div class="dots" id="dots"></div>
+      <button id="next">&lsaquo;</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= ڕێکخستن (CONFIG) ================= */
+const CONFIG = {
+  holdMs: 1800,
+  typewriter: true,
+  typeSpeed: 28,
+  startDate: "2024-01-01",      // بۆ لابردنی کاتژمێر: ""
+  timerLabel: "کاتێک لەگەڵ یەکین:",
+  musicVolume: 1.0,
+  cards: [
+    { title:"💖 نازیزەکەم...", paras:[
+      "کاتێک پەنجەت بە دڵەکەدا نا و پڕ بوو، هەستت بەو گەرمییە کرد؟ ڕێک هەمان ئەو هەستە پاک و نەرمەیە کە لە ناخمدایە، کاتێک تەنها ساتێک بیر لە تۆ و لە بوونی تۆ لە ژیانمدا دەکەمەوە.",
+      "تۆ تەنها کەسێک نیت لە ڕۆژمێری ڕۆژەکانمدا، بەڵکو تۆ خودی ژیانی، ئەو تیشکە گەشەی کە تاریکی و ساردوسڕی دەوروبەرم ڕووناک دەکاتەوە."]},
+    { title:"💖 گیانەکەم...", paras:[
+      "هەر لێدانێکی ئەم دڵەی سینەم ناوێکی تایبەت دەهێنێت و ئەویش بێگومان ناوی تۆیە. بوونی تۆ گەورەترین و جوانترین بەخشیشە کە خودا پێی شادکردووم و جیهانی بۆ ڕازاندوومەتەوە.",
+      "کاتێک سەیرێکی قوڵایی چاوەکانت دەکەم، مەنزڵگەیەک لە ئارامی و پاکی دەبینم کە تێیدا هەموو ناخۆشییەکانی دونیا لەبیر دەکەم."]},
+    { title:"✨ هەموو ژیانم...", paras:[
+      "تۆ تاکە زەردەخەنەی سەر لێوەکانی منی و ئەو هیوایەی کە هەموو بەیانییەک پێی دەست پێدەکەم. لەگەڵ تێپەڕبوونی هەر چرکەیەک و هەناسەیەکدا، زیاتر لە جاران عاشق و سەرسامی جوانی ڕوخسار و پاکی ڕۆحت دەبم."],
+      sign:"خۆشم دەوێیت، بۆ هەمیشە ❤️" }
+  ]
+};
+
+/* ================= Helpers ================= */
+const $=id=>document.getElementById(id);
+const bgm=$('bgm');
+let musicOn=true, audioStarted=false;
+
+/* ---------- Particles ---------- */
+const cv=$('particles'),cx=cv.getContext('2d');
+const fx=$('fx'),fc=fx.getContext('2d');
+let W,H,ps=[];
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;fx.width=W;fx.height=H}
+resize();addEventListener('resize',resize);
+for(let i=0;i<55;i++)ps.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.6,vx:(Math.random()-.5)*.3,vy:-Math.random()*.4-.1,a:Math.random()*.6+.2,t:Math.random()*6});
+(function loop(){
+  cx.clearRect(0,0,W,H);
+  ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.t+=.03;
+    if(p.y<-5){p.y=H+5;p.x=Math.random()*W}
+    cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);
+    cx.fillStyle=`rgba(255,150,200,${p.a*(.6+.4*Math.sin(p.t))})`;cx.shadowColor='#ff8fb8';cx.shadowBlur=8;cx.fill()});
+  requestAnimationFrame(loop)})();
+
+/* ---------- Confetti ---------- */
+let conf=[],confRunning=false;
+function burst(){
+  for(let i=0;i<90;i++)conf.push({x:W/2,y:H/2,vx:(Math.random()-.5)*14,vy:-Math.random()*14-3,g:.28,s:Math.random()*16+10,e:['💖','💗','✨','❤️','💕'][i%5],life:130});
+  if(confRunning)return;
+  confRunning=true;
+  (function f(){
+    fc.clearRect(0,0,W,H);
+    conf=conf.filter(c=>c.life>0);
+    conf.forEach(c=>{c.x+=c.vx;c.y+=c.vy;c.vy+=c.g;c.life--;fc.globalAlpha=Math.min(1,c.life/40);fc.font=c.s+'px serif';fc.fillText(c.e,c.x,c.y)});
+    fc.globalAlpha=1;
+    if(conf.length)requestAnimationFrame(f);else{fc.clearRect(0,0,W,H);confRunning=false}
+  })();
+}
+
+/* ---------- Music (چاککراو) ---------- */
+function fadeTo(v,ms=2000){
+  const s=bgm.volume,t0=performance.now();
+  (function s2(){const k=Math.min((performance.now()-t0)/ms,1);bgm.volume=Math.max(0,Math.min(1,s+(v-s)*k));if(k<1)requestAnimationFrame(s2)})();
+}
+function playMusic(){
+  if(!musicOn||audioStarted)return;
+  bgm.volume=0;
+  bgm.play().then(()=>{audioStarted=true;fadeTo(CONFIG.musicVolume)}).catch(()=>{});
+}
+// گۆرانی لە یەکەم بەردانی پەنجە / کلیک / کیبۆرد دەست پێدەکات
+['pointerup','touchend','click','keydown'].forEach(ev=>addEventListener(ev,playMusic));
+
+$('musicBtn').onclick=()=>{
+  musicOn=!musicOn;
+  $('musicBtn').textContent=musicOn?'🔊':'🔇';
+  if(musicOn){bgm.play().then(()=>{audioStarted=true;fadeTo(CONFIG.musicVolume,600)}).catch(()=>{})}
+  else{fadeTo(0,400);setTimeout(()=>bgm.pause(),420)}
+};
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)bgm.pause();else if(musicOn&&audioStarted)bgm.play().catch(()=>{});
+});
+
+/* ---------- Themes ---------- */
+const THEMES={
+  pink:{'--c1':'#ff4f94','--c2':'#ff8fb8','--bg1':'#4a1442','--bg2':'#2a0b2e','--bg3':'#14051a'},
+  purple:{'--c1':'#9b5cff','--c2':'#c4a3ff','--bg1':'#2d1459','--bg2':'#1a0b38','--bg3':'#0b0520'},
+  blue:{'--c1':'#38a8ff','--c2':'#8fd0ff','--bg1':'#0f3560','--bg2':'#0a2040','--bg3':'#040f20'},
+  gold:{'--c1':'#ffbf3c','--c2':'#ffdc8a','--bg1':'#4d3210','--bg2':'#2e1d08','--bg3':'#150d03'}};
+function setTheme(n){
+  if(!THEMES[n])n='pink';
+  Object.entries(THEMES[n]).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+  try{localStorage.setItem('theme',n)}catch(e){}
+}
+$('themeBtn').onclick=()=>$('themes').classList.toggle('open');
+document.querySelectorAll('#themes i').forEach(i=>i.onclick=()=>{setTheme(i.dataset.t);$('themes').classList.remove('open')});
+let saved='pink';try{saved=localStorage.getItem('theme')||'pink'}catch(e){}
+setTheme(saved);
+$('fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
+
+/* ---------- Hold heart ---------- */
+const heart=$('heart'),hfill=$('hfill'),lock=$('lock'),cards=$('cards');
+let start=0,raf=null,finished=false;
+function tick(){
+  const p=Math.min((performance.now()-start)/CONFIG.holdMs,1);
+  hfill.style.clipPath=`inset(${100-p*100}% 0 0 0)`;
+  $('pct').textContent=Math.round(p*100)+'%';
+  if(p>=1)return complete();
+  raf=requestAnimationFrame(tick);
+}
+function begin(e){
+  if(finished)return;
+  e.preventDefault();
+  heart.classList.add('holding','pulse');
+  start=performance.now();raf=requestAnimationFrame(tick);
+}
+function cancel(){
+  if(finished)return;
+  cancelAnimationFrame(raf);
+  heart.classList.remove('holding','pulse');
+  hfill.style.clipPath='inset(100% 0 0 0)';$('pct').textContent='';
+}
+function complete(){
+  finished=true;heart.classList.add('done');
+  navigator.vibrate?.([60,40,60]);burst();
+  setTimeout(()=>{lock.classList.add('hide');cards.classList.remove('hide');show(0,'L')},1200);
+}
+lock.addEventListener('pointerdown',begin);
+addEventListener('pointerup',cancel);addEventListener('pointercancel',cancel);
+
+/* ---------- Carousel ---------- */
+const box=$('slides'),dotsEl=$('dots'),prev=$('prev'),next=$('next');
+let cur=-1,typeTimer=null;
+CONFIG.cards.forEach(()=>dotsEl.appendChild(Object.assign(document.createElement('span'),{className:'dot'})));
+const dots=[...dotsEl.children];
+
+function typeInto(el,text,done){
+  let i=0;el.classList.add('caret');
+  (function s(){el.textContent=text.slice(0,++i);
+    if(i<text.length)typeTimer=setTimeout(s,CONFIG.typeSpeed);
+    else{el.classList.remove('caret');done&&done()}})();
+}
+
+function show(n,dir){
+  if(n<0||n>=CONFIG.cards.length)return;
+  clearTimeout(typeTimer);
+  const c=CONFIG.cards[n],s=document.createElement('div');
+  s.className='slide '+(dir==='R'?'inR':'inL');
+  s.innerHTML=`<h2>${c.title}</h2>`;
+  const pEls=c.paras.map(()=>{const p=document.createElement('p');s.appendChild(p);return p});
+  let sg=null;if(c.sign){sg=document.createElement('p');sg.className='sign';s.appendChild(sg)}
+  box.innerHTML='';box.appendChild(s);cur=n;
+  dots.forEach((d,i)=>d.classList.toggle('active',i===n));
+  prev.disabled=n===0;next.disabled=n===CONFIG.cards.length-1;
+  $('actions').classList.remove('show');
+  const finish=()=>{if(n===CONFIG.cards.length-1){$('actions').classList.add('show');burst()}};
+  if(CONFIG.typewriter){
+    (function run(i){
+      if(i>=pEls.length){if(sg)return typeInto(sg,c.sign,finish);return finish()}
+      typeInto(pEls[i],c.paras[i],()=>run(i+1));
+    })(0);
+  }else{
+    pEls.forEach((p,i)=>p.textContent=c.paras[i]);
+    if(sg)sg.textContent=c.sign;finish();
+  }
+}
+next.onclick=()=>show(cur+1,'L');
+prev.onclick=()=>show(cur-1,'R');
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')show(cur+1,'L');if(e.key==='ArrowRight')show(cur-1,'R')});
+let sx=null;
+cards.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+cards.addEventListener('touchend',e=>{
+  if(sx===null)return;
+  const d=e.changedTouches[0].clientX-sx;
+  if(Math.abs(d)>60)d<0?show(cur+1,'L'):show(cur-1,'R');
+  sx=null;
+});
+
+/* ---------- Floating hearts ---------- */
+cards.addEventListener('pointerdown',e=>{
+  if(e.target.closest('button'))return;
+  const h=document.createElement('div');h.className='floaty';
+  h.textContent=['💖','💗','💕','✨'][Math.random()*4|0];
+  h.style.left=e.clientX-10+'px';h.style.top=e.clientY-10+'px';
+  document.body.appendChild(h);setTimeout(()=>h.remove(),1600);
+  navigator.vibrate?.(10);
+});
+
+/* ---------- Love timer ---------- */
+if(CONFIG.startDate){
+  const d0=new Date(CONFIG.startDate).getTime();
+  const upd=()=>{
+    let s=Math.max(0,Math.floor((Date.now()-d0)/1000));
+    const d=Math.floor(s/86400);s%=86400;
+    const h=Math.floor(s/3600);s%=3600;
+    const m=Math.floor(s/60);s%=60;
+    $('timer').textContent=`${CONFIG.timerLabel} ${d} ڕۆژ ${h} کاتژمێر ${m} خولەک ${s} چرکە 💞`;
+  };
+  upd();setInterval(upd,1000);
+}
+
+/* ---------- Replay & Share ---------- */
+$('replay').onclick=()=>show(0,'R');
+$('share').onclick=async()=>{
+  const data={title:document.title,text:'نامەیەکی تایبەت بۆ تۆ 💖',url:location.href};
+  try{
+    if(navigator.share)await navigator.share(data);
+    else{await navigator.clipboard.writeText(location.href);alert('لینکەکە کۆپی کرا ✅')}
+  }catch(e){}
+};
+</script>
+</body>
+</html>
+
